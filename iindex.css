@@ -1,0 +1,8 @@
+.container {
+  display: flex; /* Đặt các child element nằm ngang */
+}
+.sub-container,
+.sub-container-2 {
+  float: left;
+  width: 50%; /* Thiết lập chiều rộng bằng nhau (tùy chỉnh theo ý muốn) */
+}

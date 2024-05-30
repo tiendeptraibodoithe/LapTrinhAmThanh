@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Webcam Video Upload</title>
+    <link rel="stylesheet" href="/iindex.css" />
+  </head>
+  <style>
+    .container {
+      display: flex; /* Đặt các child element nằm ngang */
+    }
+    .sub-container,
+    .sub-container-2 {
+      float: left;
+      width: 50%; /* Thiết lập chiều rộng bằng nhau (tùy chỉnh theo ý muốn) */
+    }
+    /* CSS cho Navigation Bar */
+    .navbar {
+      overflow: hidden;
+      background-color: #333; /* Màu nền của thanh điều hướng */
+    }
+
+    .navbar a {
+      float: left;
+      display: block;
+      color: #f2f2f2; /* Màu chữ của các liên kết */
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+    }
+
+    /* Thêm màu nền khác khi di chuột qua các liên kết */
+    .navbar a:hover {
+      background-color: #ddd;
+      color: black;
+    }
+  </style>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <a href="/">Webcam Video Upload</a>
+      <a href="/video-uploaded">Uploaded Videos</a>
+    </nav>
+
+    <h1>Webcam Video Upload</h1>
+    <div class="container">
+      <div class="sub-container">
+        <div>
+          <video id="video" width="640" height="480" autoplay></video>
+        </div>
+        <div>
+          <button id="startBtn">Start Recording</button>
+          <button id="stopBtn" disabled>Stop Recording</button>
+          <button id="downloadBtn" disabled>Upload Video</button>
+        </div>
+      </div>
+      <div class="sub-container-2">
+        <h1 id="randomText"></h1>
+      </div>
+    </div>
+
+    <script>
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const video = document.getElementById("video");
+      const randomText = document.getElementById("randomText");
+
+      let mediaRecorder;
+      let recordedChunks = [];
+
+      startBtn.onclick = async () => {
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        downloadBtn.disabled = true;
+
+        try {
+          const response = await fetch("/api/random-text");
+          if (response.ok) {
+            const jsonResponse = await response.json();
+            randomText.innerText = jsonResponse.text;
+            startRecording(jsonResponse.text);
+          } else {
+            randomText.innerText = "Failed to fetch random text";
+          }
+        } catch (error) {
+          console.error("Error fetching random text:", error);
+          randomText.innerText = "Error fetching random text";
+        }
+      };
+
+      stopBtn.onclick = () => {
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        downloadBtn.disabled = false;
+        mediaRecorder.stop();
+      };
+
+      downloadBtn.onclick = async () => {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = "recorded-video.webm";
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+
+        // Upload video file to the server
+        const formData = new FormData();
+        formData.append("video", blob, "recorded-video.webm");
+
+        try {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          if (response.ok) {
+            const result = await response.json();
+            console.log("File uploaded successfully:", result);
+            window.location.href = "/video-uploaded";
+          } else {
+            console.error("Failed to upload file");
+          }
+        } catch (error) {
+          console.error("Error uploading file:", error);
+        }
+      };
+
+      function startRecording(promptText) {
+        navigator.mediaDevices
+          .getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            video.srcObject = stream;
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+              }
+            };
+
+            mediaRecorder.start();
+          })
+          .catch((error) => {
+            console.error("Error accessing media devices.", error);
+          });
+      }
+    </script>
+  </body>
+</html>

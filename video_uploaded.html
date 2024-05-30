@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Uploaded Videos</title>
+    <style>
+      .container {
+        display: flex;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .video-player {
+        width: 50%;
+        text-align: center;
+      }
+      .prompt-text {
+        font-style: italic;
+        color: grey;
+      }
+      /* CSS cho Navigation Bar */
+      .navbar {
+        overflow: hidden;
+        background-color: #333; /* Màu nền của thanh điều hướng */
+      }
+
+      .navbar a {
+        float: left;
+        display: block;
+        color: #f2f2f2; /* Màu chữ của các liên kết */
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+      }
+
+      /* Thêm màu nền khác khi di chuột qua các liên kết */
+      .navbar a:hover {
+        background-color: #ddd;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <a href="/">Webcam Video Upload</a>
+      <a href="/video-uploaded">Uploaded Videos</a>
+    </nav>
+
+    <h1>Uploaded Videos</h1>
+    <div class="container">
+      <div class="video-list">
+        <table id="videoTable">
+          <thead>
+            <tr>
+              <th>Video Link</th>
+              <th>Prompt</th>
+            </tr>
+          </thead>
+          <tbody id="videoList"></tbody>
+        </table>
+      </div>
+      <div class="video-player">
+        <video id="videoPlayer" controls width="640" height="480"></video>
+        <div id="videoPrompt" class="prompt-text"></div>
+      </div>
+    </div>
+
+    <script>
+      async function fetchVideos() {
+        try {
+          const response = await fetch("/api/videos");
+          const data = await response.json();
+          console.log(data); // Log dữ liệu để kiểm tra
+          const videoTable = document.getElementById("videoTable");
+
+          data.videos.forEach((video) => {
+            const row = videoTable.insertRow();
+            const linkCell = row.insertCell(0);
+            const promptCell = row.insertCell(1);
+
+            const link = document.createElement("a");
+            link.href = "#";
+            link.innerText = video.filename;
+            link.onclick = (e) => {
+              e.preventDefault();
+              document.getElementById(
+                "videoPlayer"
+              ).src = `/uploads/${video.filename}`;
+              document.getElementById("videoPrompt").innerText =
+                video.promptText;
+            };
+
+            linkCell.appendChild(link);
+            promptCell.innerText = video.promptText;
+          });
+        } catch (error) {
+          console.error("Error fetching videos:", error);
+        }
+      }
+
+      fetchVideos();
+    </script>
+  </body>
+</html>
